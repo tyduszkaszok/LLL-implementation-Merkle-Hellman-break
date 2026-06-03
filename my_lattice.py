@@ -1,38 +1,67 @@
-B = [[2137, 67], [3.0, 1.0]]
+B = [[1, 5, 1],[4, 2, 1],[1, 4, 1]]
+
 import numpy as np
-def scalar_multi(v1, v2):
-    sum = 0
-    for v1_i, v2_i in zip(v1, v2):
-        sum += v1_i * v2_i
-    return sum
-
-def gram_schmidt(B):
-    n = len(B[0])
-    B_good = [B[0]]
-    for b_vec in B[1:]:
-        mu = [scalar_multi(b_vec, b_good)/scalar_multi(b_good, b_good) for b_good in B_good]
-        for m, b_vec_good in enumerate(B_good):
-            for i in range(n):
-                b_vec[i] = b_vec[i] - mu[m]*b_vec_good[i]
-        B_good.append(b_vec)
-    return B_good
-
-print(gram_schmidt(B))
-
-
-def gram_schmidt(B):
+def hadamard_ratio(B):
     B = np.array(B, dtype=float)
     n = B.shape[0]
-    Bs = np.zeros_like(B)
-    mu = np.zeros((n, n))
-    for i in range(n):
-        Bs[i] = B[i].copy()
-        for j in range(i):
-            denom = float(Bs[j] @ Bs[j])
-            mu[i, j] = float(B[i] @ B[j]) / denom if denom > 0 else 0.0
-            Bs[i] = Bs[i] - mu[i, j]*Bs[j]
-    return Bs, mu
+    det = abs(np.linalg.det(B))
+    norms_prod = np.prod(np.linalg.norm(B, axis=1))
+    if norms_prod == 0: return 0.0
+    return (det / norms_prod) ** (1.0 / n)
 
-# Sanity check: B*[i] is orthogonal to B*[j] for j < i.
-Bs, mu = gram_schmidt(B)
-print('B  =', Bs)
+#no numpy
+
+def scalar_multi(v1, v2):
+    return sum(x * y for x, y in zip(v1, v2))
+
+def gram_schmidt(B):
+    n = len(B)
+    B_good = []
+    mus = [[0 for _ in range(n)] for _ in range(n)]
+    for i, b_vec in enumerate(B):
+        b_vec_good = list(b_vec)
+        for j, prev in enumerate(B_good):
+            mu = scalar_multi(b_vec, prev) / scalar_multi(prev, prev)
+            mus[i][j] = mu
+            b_vec_good = [bg - mu * p for bg, p in zip(b_vec_good, prev)]
+        B_good.append(b_vec_good)
+    return B_good, mus
+
+B_good, mus = gram_schmidt(B)
+
+
+def lll(B, delta=0.75):
+    k = 1
+    n = len(B)
+    B_good, mu = gram_schmidt(B)
+
+    def size_reduce():
+        for i in range(k-1, -1, -1):
+            if abs(mu[k][i]) > 0.5:
+                r = round(mu[k][i])
+                B[k] = [bk_elem - r * bi_elem for bk_elem, bi_elem in zip(B[k], B[i])]
+                for j in range(i):
+                    mu[k][j] -= r * mu[i][j]
+                mu[k][i] -= r
+
+    while k < n:
+        size_reduce()
+        
+        lhs = scalar_multi(B_good[k], B_good[k]) + (mu[k][k-1]**2) * scalar_multi(B_good[k-1], B_good[k-1])
+        rhs = delta * scalar_multi(B_good[k-1], B_good[k-1])
+
+        if lhs < rhs:
+            B[k], B[k-1] = B[k-1], B[k]
+            B_good, mu = gram_schmidt(B)
+            k = max(k - 1, 1)
+        else:
+            k = k + 1
+            
+    return B
+
+print(f"Old base vectors: {B}")
+print(f"Hamard ratio: {hadamard_ratio(B)}")
+print()
+B_new = lll(B)
+print(f"New base vectors: {B_new}")
+print(f"Hamard ratio: {hadamard_ratio(B_new)}")
