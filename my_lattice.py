@@ -65,3 +65,48 @@ print()
 B_new = lll(B)
 print(f"New base vectors: {B_new}")
 print(f"Hamard ratio: {hadamard_ratio(B_new)}")
+
+import random
+
+def gcd(a, b):
+    if a == 0:
+        return b
+    gcd(b % a, a)
+
+def merkle_hellman_gen(n=10, target_bits=40, seed=0):
+    rng = random.Random(seed)
+    w = [rng.randrange(2, 10)] 
+    for _ in range(n-1): # tworzymy ciąg superrosnący
+        w.append(sum(w) + rng.randrange(1, 10))
+    print(w)
+    m = max(sum(w) + rng.randrange(1, 100), 1 << 40) # wybieramy m, staramy się zminimalizować gęstość
+    while True:
+        r = rng.randrange(2, m) #szukamy r względnie pierwszego z m
+        if gcd(r, m) == 1:
+            break
+    a = [(r*i)%m for i in w]
+    return a, w, m, r
+
+def encrypt(a, x): #kodowanie wiadomości
+    return sum(a_i*x_i for a_i, x_i in zip(a, x))
+
+def lo_lattice(a, S):
+    n = len(a)
+    L = [[0]*(n+1)  for _ in range(n+1)] # tworzymy pustą kratę n+1 x n+1
+    for i in range(n): # zapełniamy przekątna 2 -> pierwotny algorytm i ulepszony przeskalowujemy przez 2 by pozbyć się ułamków w ostatnim rzędzie
+        L[i][i] = 2
+    for i in range(n):
+        L[i][n] = 2*a[i] # zapełniamy ostatnią kolumnę a_i -> zakładamy, że N = 1
+    for j in range(n):
+        L[n][j] = 1 # zapełniamy ostatni rząd 1 (czyli 0.5 * 2 zgodnie z pierwszym ulepszeniem Costera-Jouxa)
+    L[n][n] = 2*S
+
+    return L
+
+
+n = 10
+a, w_secret, m_secret, r_secret = merkle_hellman_gen(n=n, target_bits=40, seed=42)
+plain = [random.Random(7).randrange(2) for _ in range(n)]
+S = encrypt(a, plain)
+L = lo_lattice(a, S)
+L_reduced = lll(L, delta=0.75)
