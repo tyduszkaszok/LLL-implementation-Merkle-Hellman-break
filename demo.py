@@ -1,7 +1,7 @@
 import numpy as np
 import math 
 import random
-from lattice_crypto import merkle_hellman_gen, encrypt, lo_lattice, lll, scalar_multi, bits_from_short_vec, hadamard_ratio
+from lattice_crypto import merkle_hellman_gen, encrypt, lo_lattice, lll, bits_from_short_vec, hadamard_ratio
 
 print("Pokaz projektu: ")
 msg_rng = random.Random(42)
@@ -12,7 +12,7 @@ for i in range(0, 3):
     n = ns[i]
     print(f"Długość wiadomości: {n}")
     plain = [msg_rng.randrange(2) for _ in range(n)]
-    a, w_secret, m_secret, r_secret = merkle_hellman_gen(n=n, target_bits=60, seed=42, length=length)
+    a, w_secret, m_secret, r_secret = merkle_hellman_gen(n=n, seed=42, length=length)
     S = encrypt(a, plain)
     L = lo_lattice(a, S)
     d = round(n / math.log2(max(a)), 4)

@@ -1,7 +1,6 @@
 import numpy as np
 import random
 import math
-import numpy as np
 
 def hadamard_ratio(B): # współczynnik Hadamarda
     n = len(B)
@@ -70,7 +69,7 @@ def gcd(a, b): # algorytm Euklidesa największego wspólnego dzielnika
         return b
     return gcd(b % a, a)
 
-def merkle_hellman_gen(n=10, target_bits=40, seed=0, length=40):
+def merkle_hellman_gen(n=10, seed=0, length=40):
     rng = random.Random(seed)
     w = [rng.randrange(2, 10)]
     for _ in range(n-1): # tworzymy ciąg superrosnący
